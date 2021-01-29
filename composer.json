@@ -1,0 +1,29 @@
+{
+    "name": "pc/water",
+    "authors": [
+        {
+            "name": "Dmitry Golubev",
+            "email": "dmitriy.golubev@uralchem.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\Controllers\\" : "app/controllers",
+            "App\\Models\\" : "app/models",
+            "Libs\\" : "libs",
+            "Core\\" : "core",
+            "Core\\Libs\\" : "core/libs"
+        },
+        "files": [
+            "libs/functions.php"
+        ]
+    },
+    "require": {
+        "filp/whoops": "^2.9",
+        "vlucas/phpdotenv": "^5.3",
+        "vlucas/valitron": "^1.4"
+    },
+    "require-dev": {
+        "cbschuld/browser.php": "^1.9"
+    }
+}
