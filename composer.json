@@ -21,7 +21,8 @@
     "require": {
         "filp/whoops": "^2.9",
         "vlucas/phpdotenv": "^5.3",
-        "vlucas/valitron": "^1.4"
+        "vlucas/valitron": "^1.4",
+        "mongodb/mongodb": "^1.8"
     },
     "require-dev": {
         "cbschuld/browser.php": "^1.9"

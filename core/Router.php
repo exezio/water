@@ -4,45 +4,67 @@
 namespace Core;
 
 
+
 class Router
 {
+    /**Array of preassigned routes
+     * @var array
+     */
+    private static array $routes;
 
-    private static $routes = [];
-    private static $route = [];
-    private static $getParams = [];
-    private static $method = '';
-    private static $url = '';
+    /** Array to fill when matches are found
+     * @var array
+     */
+    private static array $route;
 
+    /**Array of get-params if they exists
+     * @var array|null
+     */
+    private static ?array $getParams = null;
 
-    public static function addRoute($regexp, $route = [])
+    /**Request method
+     * @var string
+     */
+    private static string $method;
+
+    /**Url
+     * @var string
+     */
+    private static string $url;
+
+    /**Function for adding routes
+     * @param string $regexp
+     * @param array $route
+     */
+    public static function addRoute(string $regexp, array $route = []) : void
     {
         self::$routes[$regexp] = $route;
     }
 
-    public static function getRoutes()
+    public static function getRoutes() : array
     {
         return self::$routes;
     }
 
-    public static function getRoute()
+    public static function getRoute() : array
     {
         return self::$route;
     }
 
-    public static function getParams()
+    public static function getParams() : array
     {
         return self::$getParams;
     }
 
-    public static function getMethod()
+    public static function getMethod() : string
     {
         return self::$method;
     }
 
-    public static function dispatch($url, $method)
+    public static function dispatch(string $url, string $method) : void
     {
         if (self::matchRoute($url, $method)) {
-            $controller = 'App\Controllers\\' . self::$route['prefix'] . self::$route['controller'] . 'Controller';
+            $controller = 'App\Controllers\\' . (isset(self::$route['prefix']) ?: '') . self::$route['controller'] . 'Controller';
             $action = self::$route['action'] . 'Action';
             if (class_exists($controller)) {
                 $controllerObj = new $controller(self::$route, self::$getParams, self::$method);
@@ -53,7 +75,12 @@ class Router
         }
     }
 
-    private static function matchRoute($url, $method)
+    /**Finding route matches
+     * @param string $url
+     * @param string $method
+     * @return bool
+     */
+    private static function matchRoute(string $url, string $method) : bool
     {
         self::parseUrl($url, $method);
         $getParams = self::$getParams ? '?' . array_key_first(self::$getParams) : null;
@@ -70,7 +97,11 @@ class Router
         return false;
     }
 
-    private static function parseUrl($url, $method)
+    /**Converts url to the required form and extracts get parameters
+     * @param string $url
+     * @param string $method
+     */
+    private static function parseUrl(string $url, string $method) : void
     {
         $url = parse_url($url);
         if (isset($url['query'])) {
