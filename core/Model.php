@@ -35,18 +35,7 @@ abstract class Model
         $this->mongoClient = $database->getClient()->selectDatabase($this->dataBaseName);
     }
 
-    /**Filling the array with user data
-     * @param array $data
-     * @param string $subject
-     * @return void
-     */
-    public  function loadAttributes(array $data, string $subject) : void
-    {
-        foreach ($this->$subject as $item=>$value)
-        {
-            if(isset($data[$item])) $this->$subject[$item] = $data[$item];
-        }
-    }
+
 
 
 }

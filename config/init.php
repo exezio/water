@@ -26,15 +26,15 @@ $dotenv->load();
 
 
 //User routers
-Router::addRoute(regexp: '^api/calendar:GET$',   route: ['method' => 'POST', 'controller' => 'User', 'action' => 'calendar']);
+Router::addRoute(regexp: '^api/calendar:GET$',   route: ['method' => 'POST', 'controller' => 'Subquery', 'action' => 'calendar']);
 
 Router::addRoute(regexp: '^api/order:POST$',     route: ['method' => 'POST', 'controller' => 'User', 'action' => 'create']);
 Router::addRoute(regexp: '^api/order:GET$',      route: ['method' => 'GET', 'controller' => 'User', 'action' => 'getAll']);
 Router::addRoute(regexp: '^api/order:GET\\?id$', route: ['method' => 'GET', 'controller' => 'User', 'action' => 'getById']);
 Router::addRoute(regexp: '^api/order:PUT\\?id$', route: ['method' => 'PUT', 'controller' => 'User', 'action' => 'update']);
 Router::addRoute(regexp: '^api/order:DELETE$',   route: ['method' => 'DELETE', 'controller' => 'User', 'action' => 'delete']);
-Router::addRoute(regexp: '^api/login:POST$',     route: ['method' => 'POST', 'controller' => 'User', 'action' => 'login']);
-Router::addRoute(regexp: '^api/auth:POST$',      route: ['method' => 'POST', 'controller' => 'User', 'action' => 'auth']);
+Router::addRoute(regexp: '^api/login:POST$',     route: ['method' => 'POST', 'controller' => 'Authentication', 'action' => 'login']);
+Router::addRoute(regexp: '^api/auth:POST$',      route: ['method' => 'POST', 'controller' => 'Authentication', 'action' => 'auth']);
 
 //Admin routes
 Router::addRoute(regexp: '^api/admin/cabinet$',  route: ['method' => 'GET', 'controller' => 'Admin', 'action' => 'cabinet', 'prefix' => 'admin\\']);
