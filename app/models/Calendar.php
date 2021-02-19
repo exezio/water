@@ -37,6 +37,7 @@ class Calendar
         foreach ($data as $key => $value) {
             $arrayOfDays = explode(',', $value['days']);
             foreach ($arrayOfDays as $item => $day) {
+                strpos($day, '*') ? null :
                 array_push($holydaysArray, [intval($day), intval($value['month'])]);
             }
         }

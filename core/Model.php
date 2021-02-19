@@ -32,7 +32,7 @@ abstract class Model
     public function __construct()
     {
         $database = new DataBase();
-        $this->mongoClient = $database->getClient()->selectDatabase($this->dataBaseName);
+        $this->mongoClient = $database->getClient();
     }
 
 

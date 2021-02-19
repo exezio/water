@@ -15,18 +15,12 @@ class AuthenticationController extends Controller
     /**Processing an authorization attempt
      * @return void
      */
-    public function loginAction() : void
+    public function loginAction(): void
     {
-        if(!empty($_POST))
-        {
             $login = new Auth();
             $data = $_POST;
-            $login->loadAttributes(data: $data, subject: 'attributesCheckLogin');
+            $login->loadAttributesLogin($data);
             $login->checkLogin();
-        }
-        else{
-            http_response_code(400);
-        }
     }
 
     public function authAction(): void
@@ -35,9 +29,20 @@ class AuthenticationController extends Controller
         {
             $auth = new Auth();
             $data = $_POST;
+            $auth->loadAttributesAuth($data);
             $auth->auth();
-        }else{
-            http_response_code(400);
+
+        }
+    }
+
+    public function createPasswordAction()
+    {
+        if(!empty($_POST))
+        {
+            $auth = new Auth();
+            $data = $_POST;
+            $auth->loadAttributesCreatePassword($data);
+            $auth->createPassword();
         }
     }
 

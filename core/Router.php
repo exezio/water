@@ -69,9 +69,14 @@ class Router
             if (class_exists($controller)) {
                 $controllerObj = new $controller(self::$route, self::$getParams, self::$method);
                 if (method_exists($controllerObj, $action)) $controllerObj->$action();
-            } else {
-                http_response_code(404);
             }
+        }else {
+            http_response_code(404);
+            echo json_encode(array("error" => array(
+                "code" => 404,
+                "message" => "ресурс не найден",
+                "error_code" => 1
+            )), JSON_UNESCAPED_UNICODE);
         }
     }
 
