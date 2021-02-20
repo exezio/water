@@ -5,10 +5,9 @@ namespace App\Models;
 
 
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-use MongoDB\BSON\Unserializable;
-use MongoDB\Driver\WriteResult;
+
 use Valitron\Validator;
-use function MongoDB\BSON\toPHP;
+use MongoDBRef;
 
 class Auth extends User
 {
@@ -109,7 +108,7 @@ class Auth extends User
                     ['email' => $login],
                     ['$set' => ['key' => $key]]
                 );
-                sendEmail('dmitriy.golubev@uralchem.com', 'Ключ', 'Ключ');
+
 
                 http_response_code(401);
                 echo json_encode(array("message" => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик ". $result['email']), JSON_UNESCAPED_UNICODE);
@@ -130,8 +129,8 @@ class Auth extends User
 
     }
 
-    /**Correctness check login and password on database
-     * @return bool
+    /**Check correctness login and password on database
+     * @return void
      */
     public function auth(): void
     {

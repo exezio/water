@@ -42,9 +42,11 @@ Router::addRoute(regexp: '^api/createpassword:POST$',      route: ['method' => '
 Router::addRoute(regexp: '^api/admin/cabinet$',  route: ['method' => 'GET', 'controller' => 'Admin', 'action' => 'cabinet', 'prefix' => 'admin\\']);
 Router::addRoute(regexp: '^api/admin/report$',   route: ['method' => 'GET', 'controller' => 'Admin', 'action' => 'report', 'prefix' => 'admin\\']);
 Router::addRoute(regexp: '^api/admin:GET$',      route: ['method' => 'GET', 'controller' => 'Admin', 'action' => 'getAll', 'prefix' => 'admin\\']);
-Router::addRoute(regexp: '^api/admin:GET\\?id$', route: ['method' => 'GET', 'controller' => 'Admin', 'action' => 'getById']);
-Router::addRoute(regexp: '^api/admin:PUT$',      route: ['method' => 'PUT', 'controller' => 'Admin', 'action' => 'update']);
-Router::addRoute(regexp: '^api/admin:DELETE$',   route: ['method' => 'DELETE', 'controller' => 'Admin', 'action' => 'delete']);
+Router::addRoute(regexp: '^api/admin:GET\\?id$', route: ['method' => 'GET', 'controller' => 'Admin', 'action' => 'getById', 'prefix' => 'admin\\']);
+Router::addRoute(regexp: '^api/admin:PUT$',      route: ['method' => 'PUT', 'controller' => 'Admin', 'action' => 'update', 'prefix' => 'admin\\']);
+Router::addRoute(regexp: '^api/admin:DELETE$',   route: ['method' => 'DELETE', 'controller' => 'Admin', 'action' => 'delete', 'prefix' => 'admin\\']);
+Router::addRoute(regexp: '^api/admin/create-user:POST$',   route: ['method' => 'DELETE', 'controller' => 'Admin', 'action' => 'createUser', 'prefix' => 'admin\\']);
+
 
 //Other routers
 Router::addRoute(regexp: '^api/calendar:GET$',   route: ['method' => 'POST', 'controller' => 'Subrequest', 'action' => 'calendar']);

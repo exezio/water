@@ -64,17 +64,18 @@ class Router
     public static function dispatch(string $url, string $method) : void
     {
         if (self::matchRoute($url, $method)) {
-            $controller = 'App\Controllers\\' . (isset(self::$route['prefix']) ?: '') . self::$route['controller'] . 'Controller';
+            $controller = 'App\Controllers\\' . (isset(self::$route['prefix']) ? self::$route['prefix'] : '') . self::$route['controller'] . 'Controller';
             $action = self::$route['action'] . 'Action';
             if (class_exists($controller)) {
                 $controllerObj = new $controller(self::$route, self::$getParams, self::$method);
+
                 if (method_exists($controllerObj, $action)) $controllerObj->$action();
             }
         }else {
             http_response_code(404);
             echo json_encode(array("error" => array(
                 "code" => 404,
-                "message" => "ресурс не найден",
+                "message" => "Ресурс не найден",
                 "error_code" => 1
             )), JSON_UNESCAPED_UNICODE);
         }

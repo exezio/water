@@ -9,9 +9,10 @@ use Exception;
 class Calendar
 {
 
-    public function getHolidayDates(): void
+    private array $calendar;
+
+    public function __construct()
     {
-        try {
             $ch = curl_init('http://xmlcalendar.ru/data/ru/2021/calendar.json');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, array(
@@ -19,17 +20,37 @@ class Calendar
                 'Content-Type: application/json'
             ));
             $response = curl_exec($ch);
+            if(curl_errno($ch))
+            {
+                echo json_encode(array(
+                    "error" => array(
+                        "code" => 500,
+                        "message" => "Ошибка запроса: " . curl_error($ch),
+                        "error_code" => 1
+                    )
+                ), JSON_UNESCAPED_UNICODE);
+                 exit();
+            }
             curl_close($ch);
-            $response = $this->createHolydayArray(json: $response);
-            header('Access-Control-Allow-Origin: *');
-            header('Accept: application/json');
-            echo json_encode($response, JSON_UNESCAPED_UNICODE);
-        } catch (Exception $error) {
-            $error->getMessage();
-            http_response_code(404);
-        }
+            $this->calendar = $this->createHolydayArray(json: $response);
+
     }
 
+    /**
+     * Returns array of holidays for datepicker
+     */
+    public function getHolidayDates(): void
+    {
+        header('Access-Control-Allow-Origin: *');
+        header('Accept: application/json');
+        http_response_code(200);
+        echo json_encode($this->calendar, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**Helper to form an array
+     * @param string $json
+     * @return array
+     */
     private function createHolydayArray(string $json): array
     {
         $holydaysArray = [];
