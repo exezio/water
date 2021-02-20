@@ -17,7 +17,12 @@ class AdminController  extends Controller
 
     public function createUserAction()
     {
-        $users = new CreateUser();
+        if(!empty($_POST))
+        {
+            $users = new CreateUser();
+            $users->createUser(userData: $_POST);
+        }
+
     }
 
 }
