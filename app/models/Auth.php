@@ -107,7 +107,7 @@ class Auth extends User
                     ['email' => $login],
                     ['$set' => ['key' => $key]]
                 );
-//                mail(to: 'dmitriy.golubev@uralchem.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
+//                mail(to: 'dmitryzlo111@gmail.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
                 setcookie('login', $login, time() + 900);
                 http_response_code(401);
                 echo json_encode(array("message" => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик ". $user['email']), JSON_UNESCAPED_UNICODE);
