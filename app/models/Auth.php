@@ -6,6 +6,8 @@ namespace App\Models;
 
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 
+
+use http\Cookie;
 use Valitron\Validator;
 use MongoDBRef;
 
@@ -32,7 +34,8 @@ class Auth extends User
     protected array $attributesCreatePassword = [
         'login' => '',
         'password' => '',
-        'password_confirm' => ''
+        'password_confirm' => '',
+        'key' => ''
     ];
 
     /**Rules for validate
@@ -64,10 +67,12 @@ class Auth extends User
         'required' => [
             ['login'],
             ['password'],
-            ['password_confirm']
+            ['password_confirm'],
+            ['key']
         ],
         'lengthMin' => [
-            ['password', 6]
+            ['password', 6],
+            ['key', 4]
         ]
     ];
 
@@ -81,39 +86,36 @@ class Auth extends User
      */
     public function checkLogin(): void
     {
-        if ($this->validateLogin())
-        {
+        if ($this->validateLogin()){
             $login = $this->attributesLogin['login'];
             $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
-            $result = $db->findOne(['email' => $login]);
-            if(!$result)
-            {
+            $user = $db->findOne(['email' => $login]);
+
+            if(!$user){
                 http_response_code(400);
                 echo json_encode(array("error" => array(
                     "code" => 400,
                     "message" => "Пользователь не найден. Обратитесь к системному администратору",
                     "error_code" => 2
                 )), JSON_UNESCAPED_UNICODE);
+                exit();
             }
-            elseif(!$result['password'])
-            {
-                $generator = new ComputerPasswordGenerator();
-                $generator
-                    ->setNumbers(true)
-                    ->setLength(4)
-                    ->setUppercase(false)
-                    ->setLowercase(false);
-                $key = $generator->generatePassword();
+
+            if(!$user['password']){
+                $key = $this->generateKey();
                 $db->updateOne(
                     ['email' => $login],
                     ['$set' => ['key' => $key]]
                 );
-
-
+//                mail(to: 'dmitriy.golubev@uralchem.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
+                setcookie('login', $login, time() + 900);
                 http_response_code(401);
-                echo json_encode(array("message" => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик ". $result['email']), JSON_UNESCAPED_UNICODE);
-            }else {
+                echo json_encode(array("message" => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик ". $user['email']), JSON_UNESCAPED_UNICODE);
+                exit();
+
+            }else{
                 http_response_code(200);
+                exit();
             }
 
         }else{
@@ -125,8 +127,93 @@ class Auth extends User
                     "error_code" => 1
                 )
             ), JSON_UNESCAPED_UNICODE);
+            exit();
         }
 
+    }
+
+    public function createPassword(): void
+    {
+        if ($this->validatePassword()){
+            $login = $this->attributesCreatePassword['login'];
+            $password = $this->attributesCreatePassword['password'];
+            $password_confirm = $this->attributesCreatePassword['password_confirm'];
+            $key = $this->attributesCreatePassword['key'];
+            $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
+            $user = $db->findOne(['email' => $login]);
+
+            if(!$user){
+                http_response_code(400);
+                echo json_encode(array(
+                    "error" => array(
+                        "code" => 400,
+                        "message" => "Проверьте введенный логин",
+                        "error_code" => 1
+                    )
+                ), JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            if($user['password']){
+                http_response_code(401);
+                echo json_encode(array(
+                    "error" => array(
+                        "code" => 401,
+                        "message" => "Для пользователя {$login} пароль уже задан",
+                        "error_code" => 1
+                    )
+                ), JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            if ($password !== $password_confirm) {
+                http_response_code(400);
+                echo json_encode(array(
+                    "error" => array(
+                        "code" => 400,
+                        "message" => "Введенные пароли должны совпадать",
+                        "error_code" => 1
+                    )
+                ), JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            if($key !== $user['key']){
+                http_response_code(400);
+                echo json_encode(array(
+                    "error" => array(
+                        "code" => 400,
+                        "message" => "Неверно введен ключ, проверьте электронную почту {$login}",
+                        "error_code" => 1
+                    )
+                ), JSON_UNESCAPED_UNICODE);
+                exit();
+            }
+
+            else{
+                $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+                $db->updateOne(
+                    ['email' => $login],
+                    [
+                        '$set' => ['password' => $passwordHash],
+                        '$unset' => ['key' => 1]
+                    ]
+                );
+                http_response_code(200);
+                exit();
+            }
+
+        }else{
+            http_response_code(400);
+            echo json_encode(array(
+                "error" => array(
+                    "code" => 400,
+                    "message" => "Проверьте корректность введенных данных",
+                    "error_code" => 1
+                )
+            ), JSON_UNESCAPED_UNICODE);
+            exit();
+        }
     }
 
     /**Check correctness login and password on database
@@ -134,16 +221,14 @@ class Auth extends User
      */
     public function auth(): void
     {
-        if($this->validateAuth())
-        {
+        if($this->validateAuth()){
             $login = $this->attributesAuth['login'];
             $password = $this->attributesAuth['password'];
             $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
             $user = $db->findOne(['email' => $login]);
-            if($user)
-            {
-                if(password_verify($password, $user['password']))
-                {
+
+            if($user){
+                if(password_verify($password, $user['password'])){
                     $token = bin2hex(random_bytes(16));
                     $db->updateOne(
                         ['email' => $login],
@@ -154,10 +239,9 @@ class Auth extends User
                         "message" => "Вы успешно авторизовались",
                         "token" => $token
                     ),JSON_UNESCAPED_UNICODE);
+                    exit();
                 }
-            }
-            else
-            {
+            }else{
                 http_response_code(400);
                 echo json_encode(array(
                     "error" => array(
@@ -166,6 +250,7 @@ class Auth extends User
                         "error_code" => 1
                     )
                 ), JSON_UNESCAPED_UNICODE);
+                exit();
             }
         }else{
             http_response_code(400);
@@ -179,36 +264,7 @@ class Auth extends User
         }
     }
 
-    public function createPassword(): void
-    {
-        if ($this->validatePassword()) {
-            $login = $this->attributesCreatePassword['login'];
-            $password = $this->attributesCreatePassword['password'];
-            $password_confirm = $this->attributesCreatePassword['password_confirm'];
-            if (($password === $password_confirm)) {
-                $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
 
-            } else {
-                http_response_code(400);
-                echo json_encode(array(
-                    "error" => array(
-                        "code" => 400,
-                        "message" => "Введенные пароли должны совпадать",
-                        "error_code" => 1
-                    )
-                ), JSON_UNESCAPED_UNICODE);
-            }
-        } else {
-            http_response_code(400);
-            echo json_encode(array(
-                "error" => array(
-                    "code" => 400,
-                    "message" => "Введенные пароли должны совпадать",
-                    "error_code" => 1
-                )
-            ), JSON_UNESCAPED_UNICODE);
-        }
-    }
 
 
     /**Verification of entered data
@@ -257,7 +313,7 @@ class Auth extends User
     {
         foreach ($attributes as $item => $value) {
             if (isset($data[$item])) {
-                $attributes[$item] = $data[$item];
+                $attributes[$item] = trim($data[$item]);
             }
         }
     }
@@ -289,5 +345,27 @@ class Auth extends User
         $this->loadAttributes($data, $this->attributesCreatePassword);
     }
 
+    public function filterInput()
+    {
+        $args = array(
+          'login' => FILTER_VALIDATE_EMAIL,
+          'password' => FILTER_SANITIZE_SPECIAL_CHARS,
+          'password_confirm' => FILTER_SANITIZE_SPECIAL_CHARS,
+          'key' => FILTER_VALIDATE_INT
+        );
+        return $input = filter_input_array(INPUT_POST, $args);
+    }
+
+    private function generateKey()
+    {
+        $generator = new ComputerPasswordGenerator();
+        $generator
+            ->setNumbers(true)
+            ->setLength(4)
+            ->setUppercase(false)
+            ->setLowercase(false);
+        $key = $generator->generatePassword();
+        return $key;
+    }
 
 }

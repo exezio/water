@@ -68,7 +68,6 @@ class Router
             $action = self::$route['action'] . 'Action';
             if (class_exists($controller)) {
                 $controllerObj = new $controller(self::$route, self::$getParams, self::$method);
-
                 if (method_exists($controllerObj, $action)) $controllerObj->$action();
             }
         }else {
