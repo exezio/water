@@ -19,7 +19,7 @@ class AuthenticationController extends Controller
     {
             $login = new Auth();
             $data = $login->filterInput();
-            $login->loadAttributesLogin($data);
+            $data ? $login->loadAttributesLogin($data) : sendResponse(400);
             $login->checkLogin();
     }
 
@@ -29,7 +29,7 @@ class AuthenticationController extends Controller
         {
             $auth = new Auth();
             $data = $auth->filterInput();
-            $auth->loadAttributesCreatePassword($data);
+            $data ? $auth->loadAttributesCreatePassword($data) : sendResponse(400);
             $auth->createPassword();
         }
     }
@@ -40,7 +40,7 @@ class AuthenticationController extends Controller
         {
             $auth = new Auth();
             $data = $auth->filterInput();
-            $auth->loadAttributesAuth($data);
+            $data ? $auth->loadAttributesAuth($data) : sendResponse(400);
             $auth->auth();
 
         }

@@ -29,3 +29,15 @@ if(!function_exists('debug'))
 //
 //    }
 //}
+
+if(!function_exists('sendResponse'))
+{
+    function sendResponse(int $code, array $data = null)
+    {
+        http_response_code($code);
+        $json = array("code" => $code);
+        $data ? $json = array_merge($json, $data) : null;
+        echo json_encode($json,JSON_UNESCAPED_UNICODE);
+        exit();
+    }
+}
