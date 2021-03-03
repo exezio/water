@@ -102,7 +102,7 @@ class Auth extends User
                     ['email' => $login],
                     ['$set' => ['key' => $key]]
                 );
-//                mail(to: 'dmitriy.golubev@uralchem.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
+//                mail(to: 'dmitryzlo111@gmail.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
                 setcookie('login', $login, time() + 900);
                 sendResponse(code: 401, data: ['message' => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['email']}"]);
 
