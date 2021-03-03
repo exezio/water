@@ -8,6 +8,7 @@ use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 
 
 use http\Cookie;
+use http\Message;
 use Valitron\Validator;
 use MongoDBRef;
 
@@ -92,13 +93,7 @@ class Auth extends User
             $user = $db->findOne(['email' => $login]);
 
             if(!$user){
-                http_response_code(400);
-                echo json_encode(array("error" => array(
-                    "code" => 400,
-                    "message" => "Пользователь не найден. Обратитесь к системному администратору",
-                    "error_code" => 2
-                )), JSON_UNESCAPED_UNICODE);
-                exit();
+                sendResponse(code: 400, data: ['message' => 'Пользователь не найден. Обратитесь к системному администратору']);
             }
 
             if(!$user['password']){
@@ -109,25 +104,14 @@ class Auth extends User
                 );
 //                mail(to: 'dmitriy.golubev@uralchem.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
                 setcookie('login', $login, time() + 900);
-                http_response_code(401);
-                echo json_encode(array("message" => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик ". $user['email']), JSON_UNESCAPED_UNICODE);
-                exit();
+                sendResponse(code: 401, data: ['message' => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['email']}"]);
 
             }else{
-                http_response_code(200);
-                exit();
+                sendResponse(code: 200);
             }
 
         }else{
-            http_response_code(400);
-            echo json_encode(array(
-                "error" => array(
-                    "code" => 400,
-                    "message" => "Неверный логин",
-                    "error_code" => 1
-                )
-            ), JSON_UNESCAPED_UNICODE);
-            exit();
+            sendResponse(code: 400, data: ['message' => 'Неверный логин']);
         }
 
     }
@@ -143,51 +127,19 @@ class Auth extends User
             $user = $db->findOne(['email' => $login]);
 
             if(!$user){
-                http_response_code(400);
-                echo json_encode(array(
-                    "error" => array(
-                        "code" => 400,
-                        "message" => "Проверьте введенный логин",
-                        "error_code" => 1
-                    )
-                ), JSON_UNESCAPED_UNICODE);
-                exit();
+                sendResponse(code: 400, data: ['message' => 'Проверьте введенный логин']);
             }
 
             if($user['password']){
-                http_response_code(401);
-                echo json_encode(array(
-                    "error" => array(
-                        "code" => 401,
-                        "message" => "Для пользователя {$login} пароль уже задан",
-                        "error_code" => 1
-                    )
-                ), JSON_UNESCAPED_UNICODE);
-                exit();
+                sendResponse(code: 401, data: ['message' => "Для пользователя {$login} пароль уже задан"]);
             }
 
             if ($password !== $password_confirm) {
-                http_response_code(400);
-                echo json_encode(array(
-                    "error" => array(
-                        "code" => 400,
-                        "message" => "Введенные пароли должны совпадать",
-                        "error_code" => 1
-                    )
-                ), JSON_UNESCAPED_UNICODE);
-                exit();
+                sendResponse(code: 400, data: ["message" => "Введенные пароли должны совпадать"]);
             }
 
             if($key !== $user['key']){
-                http_response_code(400);
-                echo json_encode(array(
-                    "error" => array(
-                        "code" => 400,
-                        "message" => "Неверно введен ключ, проверьте электронную почту {$login}",
-                        "error_code" => 1
-                    )
-                ), JSON_UNESCAPED_UNICODE);
-                exit();
+                sendResponse(code: 400, data: ["message" => "Неверно введен ключ, проверьте электронную почту {$login}"]);
             }
 
             else{
@@ -199,20 +151,11 @@ class Auth extends User
                         '$unset' => ['key' => 1]
                     ]
                 );
-                http_response_code(200);
-                exit();
+                sendResponse(code: 200);
             }
 
         }else{
-            http_response_code(400);
-            echo json_encode(array(
-                "error" => array(
-                    "code" => 400,
-                    "message" => "Проверьте корректность введенных данных",
-                    "error_code" => 1
-                )
-            ), JSON_UNESCAPED_UNICODE);
-            exit();
+            sendResponse(code: 400, data: ["message" => "Проверьте корректность введенных данных"]);
         }
     }
 
@@ -221,6 +164,7 @@ class Auth extends User
      */
     public function auth(): void
     {
+
         if($this->validateAuth()){
             $login = $this->attributesAuth['login'];
             $password = $this->attributesAuth['password'];
@@ -234,38 +178,12 @@ class Auth extends User
                         ['email' => $login],
                         ['$set' => ['token' => $token]]
                     );
-                    http_response_code(200);
-                    echo json_encode(array(
-                        "message" => "Вы успешно авторизовались",
-                        "token" => $token
-                    ),JSON_UNESCAPED_UNICODE);
-                    exit();
+                    sendResponse(code: 200, data: ["message" => "Вы успешно авторизовались", "token" => $token]);
                 }
-            }else{
-                http_response_code(400);
-                echo json_encode(array(
-                    "error" => array(
-                        "code" => 400,
-                        "message" => "Неверный логин или пароль",
-                        "error_code" => 1
-                    )
-                ), JSON_UNESCAPED_UNICODE);
-                exit();
             }
-        }else{
-            http_response_code(400);
-            echo json_encode(array(
-                "error" => array(
-                    "code" => 400,
-                    "message" => "Неверный логин или пароль",
-                    "error_code" => 1
-                )
-            ), JSON_UNESCAPED_UNICODE);
         }
+            sendResponse(code: 400, data: ["message" => "Неверный логин или пароль"]);
     }
-
-
-
 
     /**Verification of entered data
      * @param string $attributes
