@@ -103,7 +103,6 @@ class Auth extends User
                     ['$set' => ['key' => $key]]
                 );
 //                mail(to: 'dmitryzlo111@gmail.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
-                setcookie('login', $login, time() + 900);
                 sendResponse(code: 401, data: ['message' => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['email']}"]);
 
             }else{
@@ -113,7 +112,6 @@ class Auth extends User
         }else{
             sendResponse(code: 400, data: ['message' => 'Неверный логин']);
         }
-
     }
 
     public function createPassword(): void
@@ -134,12 +132,12 @@ class Auth extends User
                 sendResponse(code: 401, data: ['message' => "Для пользователя {$login} пароль уже задан"]);
             }
 
-            if ($password !== $password_confirm) {
-                sendResponse(code: 400, data: ["message" => "Введенные пароли должны совпадать"]);
-            }
-
             if($key !== $user['key']){
                 sendResponse(code: 400, data: ["message" => "Неверно введен ключ, проверьте электронную почту {$login}"]);
+            }
+
+            if ($password !== $password_confirm) {
+                sendResponse(code: 400, data: ["message" => "Введенные пароли должны совпадать"]);
             }
 
             else{
@@ -170,15 +168,24 @@ class Auth extends User
             $password = $this->attributesAuth['password'];
             $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
             $user = $db->findOne(['email' => $login]);
-
             if($user){
                 if(password_verify($password, $user['password'])){
-                    $token = bin2hex(random_bytes(16));
+                    $authData = $this->generateAuthData();
                     $db->updateOne(
                         ['email' => $login],
-                        ['$set' => ['token' => $token]]
+                        ['$set' => ['token' => [
+                            'token_id' => (int) $authData['token_id'],
+                            'token' => $authData['token'],
+                            'secret' => $authData['secret']
+                        ]]]
                     );
-                    sendResponse(code: 200, data: ["message" => "Вы успешно авторизовались", "token" => $token]);
+                    sendResponse(
+                        code: 200,
+                        data: [
+                            'token' => $authData['token_id'] . ':' . $authData['token'],
+                            'secret' => $authData['secret']
+                        ]
+                    );
                 }
             }
         }
@@ -263,17 +270,6 @@ class Auth extends User
         $this->loadAttributes($data, $this->attributesCreatePassword);
     }
 
-    public function filterInput()
-    {
-        $args = array(
-          'login' => FILTER_VALIDATE_EMAIL,
-          'password' => FILTER_SANITIZE_SPECIAL_CHARS,
-          'password_confirm' => FILTER_SANITIZE_SPECIAL_CHARS,
-          'key' => FILTER_VALIDATE_INT
-        );
-        return $input = filter_input_array(INPUT_POST, $args);
-    }
-
     private function generateKey()
     {
         $generator = new ComputerPasswordGenerator();
@@ -284,6 +280,16 @@ class Auth extends User
             ->setLowercase(false);
         $key = $generator->generatePassword();
         return $key;
+    }
+
+    private function generateAuthData(): array
+    {
+        $authData = [
+            'token_id' => $this->generateKey(),
+            'token' => bin2hex(random_bytes(16)),
+            'secret' => hash("md5", $this->generateKey())
+        ];
+        return $authData;
     }
 
 }

@@ -45,11 +45,15 @@ Router::addRoute(regexp: '^api/admin:GET$',      route: ['method' => 'GET', 'con
 Router::addRoute(regexp: '^api/admin:GET\\?id$', route: ['method' => 'GET', 'controller' => 'Admin', 'action' => 'getById', 'prefix' => 'admin\\']);
 Router::addRoute(regexp: '^api/admin:PUT$',      route: ['method' => 'PUT', 'controller' => 'Admin', 'action' => 'update', 'prefix' => 'admin\\']);
 Router::addRoute(regexp: '^api/admin:DELETE$',   route: ['method' => 'DELETE', 'controller' => 'Admin', 'action' => 'delete', 'prefix' => 'admin\\']);
-Router::addRoute(regexp: '^api/admin/create-user:POST$',   route: ['method' => 'DELETE', 'controller' => 'Admin', 'action' => 'createUser', 'prefix' => 'admin\\']);
+Router::addRoute(regexp: '^api/admin/create-user:POST$',   route: ['method' => 'POST', 'controller' => 'Admin', 'action' => 'createUser', 'prefix' => 'admin\\']);
 
 
 //Other routers
-Router::addRoute(regexp: '^api/calendar:GET$',   route: ['method' => 'POST', 'controller' => 'Subrequest', 'action' => 'calendar']);
+Router::addRoute(regexp: '^api/calendar:GET$',   route: ['method' => 'GET', 'controller' => 'Subrequest', 'action' => 'calendar']);
+Router::addRoute(regexp: '^api/departments:GET$',   route: ['method' => 'GET', 'controller' => 'Subrequest', 'action' => 'getDepartmentsList']);
+//$data = file_get_contents('php://input');
+//$data = json_decode($data, JSON_FORCE_OBJECT);
+//debug($data);
 
 Router::dispatch(url: $_SERVER['REQUEST_URI'], method: $_SERVER['REQUEST_METHOD']);
 

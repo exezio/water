@@ -25,25 +25,18 @@ class AuthenticationController extends Controller
 
     public function createPasswordAction()
     {
-        if(!empty($_POST))
-        {
             $auth = new Auth();
             $data = $auth->filterInput();
             $data ? $auth->loadAttributesCreatePassword($data) : sendResponse(400);
             $auth->createPassword();
-        }
     }
 
     public function authAction(): void
     {
-        if(!empty($_POST))
-        {
             $auth = new Auth();
             $data = $auth->filterInput();
             $data ? $auth->loadAttributesAuth($data) : sendResponse(400);
             $auth->auth();
-
-        }
     }
 
 

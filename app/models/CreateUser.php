@@ -25,7 +25,7 @@ class CreateUser extends Model
                 'email' => $userData['login'],
                 'phone' => $userData['phone'],
                 'password' => '',
-                'department' => $department
+                'department' => (int) $department
             ];
             $collection_users = $db->selectCollection($this->dataBaseName, $this->user_collection);
             $user = $collection_users->insertOne($query);

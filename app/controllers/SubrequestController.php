@@ -13,4 +13,10 @@ class SubrequestController
         $calendar = new Calendar();
         $calendar->getHolidayDates();
     }
+
+    public function getDepartmentsListAction()
+    {
+        echo 'kek';
+    }
+
 }

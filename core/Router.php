@@ -71,12 +71,7 @@ class Router
                 if (method_exists($controllerObj, $action)) $controllerObj->$action();
             }
         }else {
-            http_response_code(404);
-            echo json_encode(array("error" => array(
-                "code" => 404,
-                "message" => "Ресурс не найден",
-                "error_code" => 1
-            )), JSON_UNESCAPED_UNICODE);
+            sendResponse(404, ['message' => "Ресурс не найден"]);
         }
     }
 
