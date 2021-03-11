@@ -10,23 +10,20 @@ use MongoDB\Exception\Exception;
 
 class DataBase
 {
+    use SingletonTrait;
 
-    private ?object $mongoClient;
-
+    private static ?object $mongoClient;
 
     public function __construct()
     {
         $config = $_ENV['DB'] . $_ENV['DB_HOST'] . $_ENV['DB_PORT'];
         try {
-            $this->mongoClient = new Client($config);
+            self::$mongoClient = new Client($config);
         } catch (Exception $exception) {
             echo $exception->getMessage();
         }
     }
 
-    public function getClient(): object
-    {
-        return $this->mongoClient;
-    }
+
 
 }
