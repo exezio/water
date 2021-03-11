@@ -4,7 +4,9 @@
 namespace App\Models;
 
 
-class Create
+use Core\Model;
+
+class Create extends Model
 {
 
 

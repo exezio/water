@@ -4,6 +4,8 @@
 namespace App\Controllers;
 
 
+use App\Models\CheckAuth;
+use App\Models\Create;
 use App\Models\Order;
 use Core\Controller;
 
@@ -12,7 +14,13 @@ class UserController extends Controller
 
     public function createAction()
     {
-        echo "create A";
+
+        $checkAuth = new CheckAuth();
+        if($checkAuth->checkAuth()){
+            $createOrder = new Create();
+        }else{
+            $checkAuth->getError();
+        }
     }
 
     public function getAllAction()
