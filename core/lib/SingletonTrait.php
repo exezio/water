@@ -6,7 +6,7 @@ namespace Core\lib;
 
 trait SingletonTrait
 {
-    public static ?object $instance = null;
+    public static $instance;
 
     public static function instance(): object
     {
@@ -16,8 +16,4 @@ trait SingletonTrait
         return self::$instance;
     }
 
-    public static function connect()
-    {
-        return self::$mongoClient;
-    }
 }

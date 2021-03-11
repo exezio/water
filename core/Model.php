@@ -11,7 +11,7 @@ use Valitron\Validator;
 abstract class Model
 {
 
-    /**Client for work on database
+    /**
      * @var Client
      */
     protected static object $mongoClient;
@@ -28,7 +28,7 @@ abstract class Model
     public function __construct()
     {
         $db = DataBase::instance();
-        self::$mongoClient = $db::connect();
+        self::$mongoClient = $db->connect();
     }
 
     /**Verification of entered data

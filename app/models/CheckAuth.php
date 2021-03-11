@@ -4,6 +4,7 @@
 namespace App\Models;
 
 
+use Core\lib\DataBase;
 use Core\Model;
 use Core\Router;
 
@@ -14,11 +15,13 @@ class CheckAuth extends Model
     {
         $headers = getallheaders();
         if (isset($headers['Authorization'], $headers['sign'])) {
-            $db = self::$mongoClient->selectCollection($_ENV['DB_NAME'], $_ENV["DB_COLLECTION_USERS"]);
+            $db = DataBase::instance();
+            $mongoClient = $db->connect();
+
             $token_client = trim(str_replace('Bearer', '', $headers['Authorization']));
             $sign_client = $headers['sign'];
 
-            $user = $db->findOne(['token' => $token_client]);
+            $user = $mongoClient->findOne(['token' => $token_client]);
 
             if ($user) {
                 $token = $user['token'];
