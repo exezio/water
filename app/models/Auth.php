@@ -4,15 +4,12 @@
 namespace App\Models;
 
 
+use Core\Model;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-
-
-use http\Cookie;
-use http\Message;
 use Valitron\Validator;
-use MongoDBRef;
 
-class Auth extends User
+
+class Auth extends Model
 {
     /**Filling user-entered data
      * @var array|string[]
@@ -82,62 +79,79 @@ class Auth extends User
      */
     private string $collectionName = 'users';
 
+    /**Name of database
+     * @var string
+     */
+    private string $dataBaseName = 'water';
+
     /**Check user in database
      * @return bool
      */
-    public function checkLogin(): void
+    public function checkLogin(): bool
     {
+        $inputData = $this->filterInput();
+        $this->loadAttributesLogin($inputData);
+
         if ($this->validateLogin()){
             $login = $this->attributesLogin['login'];
-            $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
+            $db = self::$mongoClient->selectCollection($_ENV['DB_NAME'], $_ENV['DB_COLLECTION_USERS']);
+
             $user = $db->findOne(['email' => $login]);
 
             if(!$user){
-                sendResponse(code: 400, data: ['message' => 'Пользователь не найден. Обратитесь к системному администратору']);
+                self::addError(code: 400, message: 'Пользователь не найден. Обратитесь к системному администратору');
+                return false;
             }
 
             if(!$user['password']){
-                $key = $this->generateKey();
+                $key = generateKey();
                 $db->updateOne(
                     ['email' => $login],
                     ['$set' => ['key' => $key]]
                 );
 //                mail(to: 'dmitryzlo111@gmail.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
-                sendResponse(code: 401, data: ['message' => "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['email']}"]);
-
+                self::addError(code: 401, message: "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['email']}");
+                return false;
             }else{
-                sendResponse(code: 200);
+                return true;
             }
 
         }else{
-            sendResponse(code: 400, data: ['message' => 'Неверный логин']);
+            self::addError(code: 400, message: 'Неверный логин');
+            return false;
         }
     }
 
-    public function createPassword(): void
+    public function createPassword(): bool
     {
+        $inputData = $this->filterInput();
+        $this->loadAttributesCreatePassword($inputData);
         if ($this->validatePassword()){
             $login = $this->attributesCreatePassword['login'];
             $password = $this->attributesCreatePassword['password'];
             $password_confirm = $this->attributesCreatePassword['password_confirm'];
             $key = $this->attributesCreatePassword['key'];
-            $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
+            $db = self::$mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
             $user = $db->findOne(['email' => $login]);
 
             if(!$user){
-                sendResponse(code: 400, data: ['message' => 'Проверьте введенный логин']);
+                self::addError(code: 400, message: 'Проверьте введенный логин');
+                return false;
             }
 
             if($user['password']){
-                sendResponse(code: 401, data: ['message' => "Для пользователя {$login} пароль уже задан"]);
+                self::addError(code: 400, message: "Для пользователя {$login} пароль уже задан");
+                return false;
             }
 
             if($key !== $user['key']){
-                sendResponse(code: 400, data: ["message" => "Неверно введен ключ, проверьте электронную почту {$login}"]);
+                self::addError(code: 400, message: "Неверно введен ключ, проверьте электронную почту {$login}");
+                return false;
             }
 
             if ($password !== $password_confirm) {
-                sendResponse(code: 400, data: ["message" => "Введенные пароли должны совпадать"]);
+                self::addError(code: 400, message: "Введенные пароли должны совпадать");
+                return false;
             }
 
             else{
@@ -149,60 +163,46 @@ class Auth extends User
                         '$unset' => ['key' => 1]
                     ]
                 );
-                sendResponse(code: 200);
+                return true;
             }
 
         }else{
-            sendResponse(code: 400, data: ["message" => "Проверьте корректность введенных данных"]);
+            self::addError(code: 400, message: 'Проверьте корректность введенных данных');
+            return false;
         }
     }
 
     /**Check correctness login and password on database
      * @return void
      */
-    public function auth(): void
+    public function auth(): array | bool
     {
-
+        $inputData = $this->filterInput();
+        $this->loadAttributesAuth($inputData);
         if($this->validateAuth()){
             $login = $this->attributesAuth['login'];
             $password = $this->attributesAuth['password'];
-            $db = $this->mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
+            $db = self::$mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
             $user = $db->findOne(['email' => $login]);
             if($user){
                 if(password_verify($password, $user['password'])){
                     $authData = $this->generateAuthData();
                     $db->updateOne(
                         ['email' => $login],
-                        ['$set' => ['token' => [
-                            'token_id' => (int) $authData['token_id'],
+                        ['$set' => [
                             'token' => $authData['token'],
                             'secret' => $authData['secret']
-                        ]]]
+                        ]]
                     );
-                    sendResponse(
-                        code: 200,
-                        data: [
-                            'token' => $authData['token_id'] . ':' . $authData['token'],
-                            'secret' => $authData['secret']
-                        ]
-                    );
+                    return $responseData = [
+                         'token' => $authData['token'],
+                         'secret' => $authData['secret']
+                     ];
                 }
             }
         }
-            sendResponse(code: 400, data: ["message" => "Неверный логин или пароль"]);
-    }
-
-    /**Verification of entered data
-     * @param string $attributes
-     * @param string $rules
-     * @return bool
-     */
-    public function validator(array $attributes, array $rules): bool
-    {
-        Validator::lang('ru');
-        $validator = new Validator($attributes);
-        $validator->rules($rules);
-        return $validator->validate();
+        self::addError(code: 400, message: 'Неверный логин или пароль');
+        return false;
     }
 
     /**Wrapper over a validator
@@ -270,24 +270,12 @@ class Auth extends User
         $this->loadAttributes($data, $this->attributesCreatePassword);
     }
 
-    private function generateKey()
-    {
-        $generator = new ComputerPasswordGenerator();
-        $generator
-            ->setNumbers(true)
-            ->setLength(4)
-            ->setUppercase(false)
-            ->setLowercase(false);
-        $key = $generator->generatePassword();
-        return $key;
-    }
 
     private function generateAuthData(): array
     {
         $authData = [
-            'token_id' => $this->generateKey(),
             'token' => bin2hex(random_bytes(16)),
-            'secret' => hash("md5", $this->generateKey())
+            'secret' => hash("md5", generateKey())
         ];
         return $authData;
     }
