@@ -41,6 +41,11 @@ class Router
         self::$routes[$regexp] = $route;
     }
 
+    public static function getUrl(): string
+    {
+        return self::$url;
+    }
+
     public static function getRoutes() : array
     {
         return self::$routes;
