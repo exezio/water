@@ -10,37 +10,23 @@ use Core\Controller;
 class AuthenticationController extends Controller
 {
 
-    protected string $token = '';
-
-    /**Processing an authorization attempt
-     * @return void
-     */
     public function loginAction(): void
     {
             $login = new Auth();
-            $data = $login->filterInput();
-            $data ? $login->loadAttributesLogin($data) : sendResponse(400);
-            $login->checkLogin();
+            $login->checkLogin() ? sendResponse(code: 200) : $login::getError();
     }
 
-    public function createPasswordAction()
+    public function createPasswordAction(): void
     {
-            $auth = new Auth();
-            $data = $auth->filterInput();
-            $data ? $auth->loadAttributesCreatePassword($data) : sendResponse(400);
-            $auth->createPassword();
+            $createPassword = new Auth();
+            $createPassword->createPassword() ? sendResponse(code: 200) : $createPassword::getError();
     }
 
     public function authAction(): void
     {
             $auth = new Auth();
-            $data = $auth->filterInput();
-            $data ? $auth->loadAttributesAuth($data) : sendResponse(400);
-            $auth->auth();
+            $authData = $auth->auth();
+            $authData ? sendResponse(code: 200, data: $authData) : $auth::getError();
     }
-
-
-
-
 
 }
