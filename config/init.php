@@ -5,24 +5,28 @@ require '../libs/functions.php';
 use Core\Router;
 use Whoops\Run;
 
+
 define('ROOT', dirname(__DIR__));
 define('APP', ROOT . '/app');
 define('PUBLIC', ROOT . '/public');
 define('CORE', ROOT . '/core');
 
+$dotenv = Dotenv\Dotenv::createImmutable(ROOT);
+$dotenv->load();
+
+define('DB_NAME', $_ENV['DB_NAME']);
+define('DB_COLLECTION_DEPARTMENT', $_ENV['DB_COLLECTION_DEPARTMENTS']);
+define('DB_COLLECTION_USERS', $_ENV['DB_COLLECTION_USERS']);
 
 session_start();
 
 
-// Пакет PHP errors
 $whoops = new Run;
 $whoops->pushHandler(new Whoops\Handler\PrettyPageHandler());
 $whoops->register();
 
 
-// Пакет для работы с .env
-$dotenv = Dotenv\Dotenv::createImmutable(ROOT);
-$dotenv->load();
+
 
 
 
@@ -51,9 +55,7 @@ Router::addRoute(regexp: '^api/admin/create-user:POST$',   route: ['method' => '
 //Other routers
 Router::addRoute(regexp: '^api/calendar:GET$',   route: ['method' => 'GET', 'controller' => 'Subrequest', 'action' => 'calendar']);
 Router::addRoute(regexp: '^api/departments:GET$',   route: ['method' => 'GET', 'controller' => 'Subrequest', 'action' => 'getDepartmentsList']);
-//$data = file_get_contents('php://input');
-//$data = json_decode($data, JSON_FORCE_OBJECT);
-//debug($data);
+
 
 Router::dispatch(url: $_SERVER['REQUEST_URI'], method: $_SERVER['REQUEST_METHOD']);
 

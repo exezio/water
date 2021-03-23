@@ -6,7 +6,7 @@ namespace Core\lib;
 
 trait SingletonTrait
 {
-    public static $instance;
+    public static ?object $instance = null;
 
     public static function instance(): object
     {

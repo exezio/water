@@ -12,21 +12,24 @@ class DataBase
 {
     use SingletonTrait;
 
-    private object $mongoClient;
+    /**
+     * @var object|Client
+     */
+    private static ?object $mongoClient = null;
 
     public function __construct()
     {
         $config = $_ENV['DB'] . $_ENV['DB_HOST'] . $_ENV['DB_PORT'];
         try {
-            $this->mongoClient = new Client($config);
+            self::$mongoClient = new Client($config);
         } catch (Exception $exception) {
             echo $exception->getMessage();
         }
     }
 
-    public function connect()
+    public static function getClient(): object
     {
-        return $this->mongoClient;
+        return self::$mongoClient;
     }
 
 }

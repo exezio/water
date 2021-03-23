@@ -18,7 +18,7 @@ class CreateUser extends Model
     {
         try {
             $db = $this->mongoClient;
-            $collection_departments = $db->selectCollection($this->dataBaseName, $this->department_collection);
+            $collection_departments = $db->selectCollection(DB_NAME, DB_COLLECTION_DEPARTMENT);
             $department = $collection_departments->findOne(['department_code' => $userData['department']]);
             $query = [
                 'user_name' => $userData['username'],
@@ -27,7 +27,7 @@ class CreateUser extends Model
                 'password' => '',
                 'department' => (int) $department
             ];
-            $collection_users = $db->selectCollection($this->dataBaseName, $this->user_collection);
+            $collection_users = $db->selectCollection(DB_NAME, DB_COLLECTION_USERS);
             $user = $collection_users->insertOne($query);
             http_response_code(200);
         }catch (Exception $error)

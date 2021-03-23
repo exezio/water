@@ -7,6 +7,7 @@ namespace Core;
 use Core\lib\DataBase;
 use MongoDB\Client;
 use Valitron\Validator;
+use function PHPUnit\Framework\throwException;
 
 abstract class Model
 {
@@ -14,12 +15,14 @@ abstract class Model
     /**
      * @var Client
      */
-    protected static object $mongoClient;
+    protected ?object $mongoClient = null;
 
     /**Array of errors
      * @var array
      */
     protected static array $errors = [];
+
+    protected ?array $inputData;
 
 
     /**
@@ -28,7 +31,8 @@ abstract class Model
     public function __construct()
     {
         $db = DataBase::instance();
-        self::$mongoClient = $db->connect();
+        $this->mongoClient = $db::getClient();
+        $this->inputData = $this->filterInput();
     }
 
     /**Verification of entered data
@@ -36,7 +40,7 @@ abstract class Model
      * @param string $rules
      * @return bool
      */
-    public function validator(array $attributes, array $rules): bool
+    public function validate(array $attributes, array $rules): bool
     {
         Validator::lang('ru');
         $validator = new Validator($attributes);
@@ -54,10 +58,24 @@ abstract class Model
             'key' => FILTER_VALIDATE_INT,
             'token' => FILTER_SANITIZE_SPECIAL_CHARS,
             'sign' => FILTER_SANITIZE_SPECIAL_CHARS,
-            'id_position' => FILTER_VALIDATE_INT,
-            'count' => FILTER_VALIDATE_INT
+            'order' => array('filter' => FILTER_DEFAULT,'flag' => FILTER_REQUIRE_ARRAY),
+            'delivery_place' => FILTER_SANITIZE_SPECIAL_CHARS
         );
         return filter_var_array($data, $args);
+    }
+
+    /**Filling the array with user data
+     * @param array $data
+     * @param array $attributes Transmitted by link
+     * @return void
+     */
+    public function loadAttributes(array $data, array &$attributes): void
+    {
+        foreach ($attributes as $item => $value) {
+            if (isset($data[$item])) {
+                $attributes[$item] = trim($data[$item]);
+            }
+        }
     }
 
     /**Add error on array of errors
@@ -78,6 +96,12 @@ abstract class Model
         http_response_code($error['code']);
         echo json_encode($error, JSON_UNESCAPED_UNICODE);
         exit();
+    }
+
+    public static function getUserToken(): string
+    {
+        $headers = getallheaders();
+        return trim(str_replace('Bearer', '', $headers['Authorization']));
     }
 
 }

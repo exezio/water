@@ -5,8 +5,7 @@ namespace App\Models;
 
 
 use Core\Model;
-use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-use Valitron\Validator;
+
 
 
 class Auth extends Model
@@ -89,12 +88,10 @@ class Auth extends Model
      */
     public function checkLogin(): bool
     {
-        $inputData = $this->filterInput();
-        $this->loadAttributesLogin($inputData);
-
-        if ($this->validateLogin()){
+        $this->loadAttributes($this->inputData, $this->attributesLogin);
+        if ($this->validate($this->attributesLogin, $this->rulesLogin)){
             $login = $this->attributesLogin['login'];
-            $db = self::$mongoClient->selectCollection($_ENV['DB_NAME'], $_ENV['DB_COLLECTION_USERS']);
+            $db = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_USERS);
 
             $user = $db->findOne(['email' => $login]);
 
@@ -117,21 +114,20 @@ class Auth extends Model
             }
 
         }else{
-            self::addError(code: 400, message: 'Неверный логин');
+            self::addError(code: 400, message: 'Проверьте корректность введенных данных');
             return false;
         }
     }
 
     public function createPassword(): bool
     {
-        $inputData = $this->filterInput();
-        $this->loadAttributesCreatePassword($inputData);
-        if ($this->validatePassword()){
+        $this->loadAttributes($this->inputData, $this->attributesCreatePassword);
+        if ($this->validate($this->attributesCreatePassword, $this->rulesCreatePassword)){
             $login = $this->attributesCreatePassword['login'];
             $password = $this->attributesCreatePassword['password'];
             $password_confirm = $this->attributesCreatePassword['password_confirm'];
             $key = $this->attributesCreatePassword['key'];
-            $db = self::$mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
+            $db = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_USERS);
             $user = $db->findOne(['email' => $login]);
 
             if(!$user){
@@ -177,12 +173,11 @@ class Auth extends Model
      */
     public function auth(): array | bool
     {
-        $inputData = $this->filterInput();
-        $this->loadAttributesAuth($inputData);
-        if($this->validateAuth()){
+        $this->loadAttributes($this->inputData, $this->attributesAuth);
+        if($this->validate($this->attributesAuth, $this->rulesAuth)){
             $login = $this->attributesAuth['login'];
             $password = $this->attributesAuth['password'];
-            $db = self::$mongoClient->selectCollection($this->dataBaseName, $this->collectionName);
+            $db = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_USERS);
             $user = $db->findOne(['email' => $login]);
             if($user){
                 if(password_verify($password, $user['password'])){
@@ -205,70 +200,56 @@ class Auth extends Model
         return false;
     }
 
-    /**Wrapper over a validator
-     * @return bool
-     */
-    public function validateLogin(): bool
-    {
-        return $this->validator($this->attributesLogin, $this->rulesLogin);
-    }
+//    /**Wrapper over a validator
+//     * @return bool
+//     */
+//    public function validateLogin(): bool
+//    {
+//        return $this->validator($this->attributesLogin, $this->rulesLogin);
+//    }
 
-    /**Wrapper over a validator
-     * @return bool
-     */
-    public function validateAuth(): bool
-    {
-        return $this->validator($this->attributesAuth, $this->rulesAuth);
-    }
+//    /**Wrapper over a validator
+//     * @return bool
+//     */
+//    public function validateAuth(): bool
+//    {
+//        return $this->validator($this->attributesAuth, $this->rulesAuth);
+//    }
 
-    /**Wrapper over a validator
-     * @return bool
-     */
-    public function validatePassword(): bool
-    {
-        return $this->validator($this->attributesCreatePassword, $this->rulesCreatePassword);
-    }
+//    /**Wrapper over a validator
+//     * @return bool
+//     */
+//    public function validatePassword(): bool
+//    {
+//        return $this->validator($this->attributesCreatePassword, $this->rulesCreatePassword);
+//    }
 
-    /**Filling the array with user data
-     * @param array $data
-     * @param array $attributes Transmitted by link
-     * @return void
-     */
-    public function loadAttributes(array $data, array &$attributes): void
-    {
-        foreach ($attributes as $item => $value) {
-            if (isset($data[$item])) {
-                $attributes[$item] = trim($data[$item]);
-            }
-        }
-    }
+//    /**Wrapper over an attributes loader
+//     * @param $data
+//     * @return void
+//     */
+//    public function loadAttributesLogin($data): void
+//    {
+//        $this->loadAttributes($data, $this->attributesLogin);
+//    }
 
-    /**Wrapper over an attributes loader
-     * @param $data
-     * @return void
-     */
-    public function loadAttributesLogin($data): void
-    {
-        $this->loadAttributes($data, $this->attributesLogin);
-    }
+//    /**Wrapper over an attributes loader
+//     * @param $data
+//     * @return void
+//     */
+//    public function loadAttributesAuth($data): void
+//    {
+//        $this->loadAttributes($data, $this->attributesAuth);
+//    }
 
-    /**Wrapper over an attributes loader
-     * @param $data
-     * @return void
-     */
-    public function loadAttributesAuth($data): void
-    {
-        $this->loadAttributes($data, $this->attributesAuth);
-    }
-
-    /**Wrapper over an attributes loader
-     * @param $data
-     * @return void
-     */
-    public function loadAttributesCreatePassword($data): void
-    {
-        $this->loadAttributes($data, $this->attributesCreatePassword);
-    }
+//    /**Wrapper over an attributes loader
+//     * @param $data
+//     * @return void
+//     */
+//    public function loadAttributesCreatePassword($data): void
+//    {
+//        $this->loadAttributes($data, $this->attributesCreatePassword);
+//    }
 
 
     private function generateAuthData(): array

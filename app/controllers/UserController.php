@@ -12,15 +12,13 @@ use Core\Controller;
 class UserController extends Controller
 {
 
+    //ПЕРЕДЕЛАТЬ ЗАГРУЗКУ АТТРИБУТОВ (ВЫНЕСТИ ЛОГИКУ В КОНСТРУКТОР МОДЕЛИ). ТАК ЖЕ ВАЛИДАЦИЯ
     public function createAction()
     {
-
-        $checkAuth = new CheckAuth();
-        if($checkAuth->checkAuth()){
+        if(CheckAuth::checkAuth()) {
             $createOrder = new Create();
-        }else{
-            $checkAuth->getError();
-        }
+            $createOrder->create();
+        }else CheckAuth::getError();
     }
 
     public function getAllAction()
