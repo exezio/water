@@ -5,9 +5,9 @@ namespace App\Models;
 
 
 use Core\lib\DataBase;
+use Core\lib\Registry;
 use Core\Model;
 use Core\Router;
-use MongoDB\Client;
 
 class CheckAuth extends Model
 {
@@ -17,12 +17,11 @@ class CheckAuth extends Model
         $headers = getallheaders();
         if (isset($headers['Authorization'], $headers['sign'])) {
             $db = DataBase::instance()->getClient();
-            $mongoClient = $db->selectCollection(DB_NAME, DB_COLLECTION_USERS);
-
+            $usersCollection = $db->water->users;
             $token_client = self::getUserToken();
             $sign_client = $headers['sign'];
-
-            $user = $mongoClient->findOne(['token' => $token_client]);
+            $user = $usersCollection->findOne(['token' => $token_client]);
+            Registry::set('user', $user);
             if ($user) {
                 $token = $user['token'];
                 $sign = hash_hmac('sha256', $user['secret'] . Router::getUrl(), $user['secret']);
@@ -33,7 +32,7 @@ class CheckAuth extends Model
                     return false;
                 }
             } else {
-                self::addError(401, 'Какое-то сообщение');
+                self::addError(401, 'Попытка подделать токен');
                 return false;
             }
         } else {

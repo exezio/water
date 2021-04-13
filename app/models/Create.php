@@ -10,36 +10,42 @@ class Create extends Model
 {
     private array $attributesOrder = [
         'order' => [],
-        'delivery_place' => ''
+        'delivery_place_code' => '',
+        'cabinet' => '',
+        'responsible' => ''
     ];
 
     private array $rulesOrder = [
         'required' => [
             ['order'],
-            ['delivery_place']
+            ['delivery_place_code']
         ]
     ];
 
-    public function create()
+    public function create(): bool
     {
         $inputData = $this->inputData;
         $this->loadAttributes($inputData, $this->attributesOrder);
         if($this->validate($this->attributesOrder, $this->rulesOrder))
         {
-            $dbUsers = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_USERS);
-            $dbDepartments = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_DEPARTMENT);
-            $department = $dbDepartments->findOne(['department_code' => "1"]);
+            $dump = new DumpD();
+            $dump->DumpD();
+            //СОЗДАТЬ СВОЙСТВА КЛАССА ПОДКОЛЮЧЕНИЯ К БД КОЛЛЕКЦИЙ
             $userToken = self::getUserToken();
-
-            $query = [
-                'user_name' => 'Голубев Дмитрий Сергеевич',
-                'email' => "Ivan@gmail.com",
-                'phone' => "8 985 345 57 78",
-                'password' => '',
-                'department' => $department
-            ];
+            $user = $this->usersCollection->findOne(['token' => $userToken]);
+            $deliveryPlaces = $user['department']['delivery_places'];
+            if(isset($deliveryPlaces[$this->attributesOrder['delivery_place_code']])){
+                $deliveryPlace = $deliveryPlaces[$this->attributesOrder['delivery_place_code']];
+                $query = [
+                    'user' => $user,
+                    'delivery_place' => $deliveryPlace['name'],
+                    'order' => $this->attributesOrder['order'],
+                    'phone' => $deliveryPlace['phone']
+                ];
+                $this->ordersCollection->insertOne($query);
+                return true;
+            } else self::addError(code: 401, message: 'Проверьте место доставки');
         } else self::addError(code: 401, message: "Не все данные");
-
+        return false;
     }
-
 }

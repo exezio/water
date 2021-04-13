@@ -4,8 +4,9 @@
 namespace App\Models;
 
 
+use Core\lib\DataBase;
 use Core\Model;
-
+use Core\Router;
 
 
 class Auth extends Model
@@ -88,26 +89,25 @@ class Auth extends Model
      */
     public function checkLogin(): bool
     {
+        $ne = new CreateUser();
+        $ne->createUser();
         $this->loadAttributes($this->inputData, $this->attributesLogin);
         if ($this->validate($this->attributesLogin, $this->rulesLogin)){
             $login = $this->attributesLogin['login'];
-            $db = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_USERS);
-
-            $user = $db->findOne(['email' => $login]);
-
+            $db = $this->usersCollection;
+            $user = $db->findOne(['login' => $login], ['collation' => ['locale' => 'en', 'strength' => 1]]);
             if(!$user){
                 self::addError(code: 400, message: 'Пользователь не найден. Обратитесь к системному администратору');
                 return false;
             }
-
-            if(!$user['password']){
+            if(!isset($user['password'])){
                 $key = generateKey();
                 $db->updateOne(
-                    ['email' => $login],
+                    ['login' => $login],
                     ['$set' => ['key' => $key]]
                 );
 //                mail(to: 'dmitryzlo111@gmail.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
-                self::addError(code: 401, message: "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['email']}");
+                self::addError(code: 401, message: "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['login']}");
                 return false;
             }else{
                 return true;
@@ -127,16 +127,16 @@ class Auth extends Model
             $password = $this->attributesCreatePassword['password'];
             $password_confirm = $this->attributesCreatePassword['password_confirm'];
             $key = $this->attributesCreatePassword['key'];
-            $db = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_USERS);
-            $user = $db->findOne(['email' => $login]);
+            $db = $this->usersCollection;
+            $user = $db->findOne(['login' => $login]);
 
             if(!$user){
                 self::addError(code: 400, message: 'Проверьте введенный логин');
                 return false;
             }
 
-            if($user['password']){
-                self::addError(code: 400, message: "Для пользователя {$login} пароль уже задан");
+            if(isset($user['password'])){
+                self::addError(code: 400, message: "Для пользователя {$user['user_name']} пароль уже задан");
                 return false;
             }
 
@@ -153,7 +153,7 @@ class Auth extends Model
             else{
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                 $db->updateOne(
-                    ['email' => $login],
+                    ['login' => $login],
                     [
                         '$set' => ['password' => $passwordHash],
                         '$unset' => ['key' => 1]
@@ -177,13 +177,13 @@ class Auth extends Model
         if($this->validate($this->attributesAuth, $this->rulesAuth)){
             $login = $this->attributesAuth['login'];
             $password = $this->attributesAuth['password'];
-            $db = $this->mongoClient->selectCollection(DB_NAME, DB_COLLECTION_USERS);
-            $user = $db->findOne(['email' => $login]);
+            $db = $this->usersCollection;
+            $user = $db->findOne(['login' => $login], ['locale' => 'en', 'strength' => 1]);
             if($user){
                 if(password_verify($password, $user['password'])){
                     $authData = $this->generateAuthData();
                     $db->updateOne(
-                        ['email' => $login],
+                        ['login' => $login],
                         ['$set' => [
                             'token' => $authData['token'],
                             'secret' => $authData['secret']

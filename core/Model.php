@@ -7,7 +7,6 @@ namespace Core;
 use Core\lib\DataBase;
 use MongoDB\Client;
 use Valitron\Validator;
-use function PHPUnit\Framework\throwException;
 
 abstract class Model
 {
@@ -16,6 +15,14 @@ abstract class Model
      * @var Client
      */
     protected ?object $mongoClient = null;
+
+    protected ?object $ordersCollection = null;
+
+    protected ?object $usersCollection = null;
+
+    protected ?object $departmentsCollection = null;
+
+    protected ?object $permissionsCollection = null;
 
     /**Array of errors
      * @var array
@@ -32,7 +39,11 @@ abstract class Model
     {
         $db = DataBase::instance();
         $this->mongoClient = $db::getClient();
-        $this->inputData = $this->filterInput();
+        $this->ordersCollection = $this->mongoClient->water->orders;
+        $this->usersCollection = $this->mongoClient->water->users;
+        $this->departmentsCollection = $this->mongoClient->water->departments;
+        $this->permissionsCollection = $this->mongoClient->water->permissions;
+        $this->filterInput();
     }
 
     /**Verification of entered data
@@ -55,13 +66,20 @@ abstract class Model
             'login' => FILTER_VALIDATE_EMAIL,
             'password' => FILTER_SANITIZE_SPECIAL_CHARS,
             'password_confirm' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'department_code' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'user_name' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'phone' => FILTER_SANITIZE_SPECIAL_CHARS,
             'key' => FILTER_VALIDATE_INT,
+            'role' => FILTER_SANITIZE_SPECIAL_CHARS,
             'token' => FILTER_SANITIZE_SPECIAL_CHARS,
             'sign' => FILTER_SANITIZE_SPECIAL_CHARS,
-            'order' => array('filter' => FILTER_DEFAULT,'flag' => FILTER_REQUIRE_ARRAY),
-            'delivery_place' => FILTER_SANITIZE_SPECIAL_CHARS
+            'order' => [
+              'filter' => FILTER_DEFAULT,
+              'flags' => FILTER_REQUIRE_ARRAY
+            ],
+            'delivery_place_code' => FILTER_VALIDATE_INT
         );
-        return filter_var_array($data, $args);
+        $this->inputData = filter_var_array($data, $args);
     }
 
     /**Filling the array with user data
@@ -73,7 +91,7 @@ abstract class Model
     {
         foreach ($attributes as $item => $value) {
             if (isset($data[$item])) {
-                $attributes[$item] = trim($data[$item]);
+                $attributes[$item] = is_array($data[$item]) ? $data[$item] : trim($data[$item]);
             }
         }
     }

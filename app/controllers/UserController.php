@@ -12,20 +12,21 @@ use Core\Controller;
 class UserController extends Controller
 {
 
-    //ПЕРЕДЕЛАТЬ ЗАГРУЗКУ АТТРИБУТОВ (ВЫНЕСТИ ЛОГИКУ В КОНСТРУКТОР МОДЕЛИ). ТАК ЖЕ ВАЛИДАЦИЯ
     public function createAction()
     {
         if(CheckAuth::checkAuth()) {
             $createOrder = new Create();
-            $createOrder->create();
+            $createOrder->create() ? sendResponse(code: 200) : $createOrder::getError();
         }else CheckAuth::getError();
     }
 
     public function getAllAction()
     {
         echo "getAll A";
+        if(CheckAuth::checkAuth()){
 
-        $order = new Order();
+        }else CheckAuth::getError();
+//        $order = new Order();
 
     }
 
