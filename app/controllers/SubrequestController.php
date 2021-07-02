@@ -5,6 +5,9 @@ namespace App\Controllers;
 
 
 use App\Models\Calendar;
+use App\Models\RefreshToken;
+use App\Models\CheckAuth;
+use App\Models\Security;
 
 class SubrequestController
 {
@@ -18,5 +21,13 @@ class SubrequestController
     {
         echo 'kek';
     }
+
+    public function refreshTokenAction()
+    {
+            $refreshToken = new RefreshToken();
+            $result = $refreshToken->refreshToken();
+            $result ? sendResponse(code: 200, data: $result) : $refreshToken::getError();
+    }
+
 
 }

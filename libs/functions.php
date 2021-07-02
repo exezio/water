@@ -35,7 +35,7 @@ use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
             ->setLength(4)
             ->setUppercase(false)
             ->setLowercase(false);
-        $key = $generator->generatePassword();
-        return $key;
+        return $generator->generatePassword();
+
         }
     }

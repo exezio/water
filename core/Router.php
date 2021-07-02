@@ -56,7 +56,7 @@ class Router
         return self::$route;
     }
 
-    public static function getParams() : array
+    public static function getParams() : array|null
     {
         return self::$getParams;
     }

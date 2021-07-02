@@ -4,9 +4,11 @@
 namespace Core;
 
 
+use App\Models\Calendar;
 use Core\lib\DataBase;
 use MongoDB\Client;
 use Valitron\Validator;
+use Browser;
 
 abstract class Model
 {
@@ -23,6 +25,14 @@ abstract class Model
     protected ?object $departmentsCollection = null;
 
     protected ?object $permissionsCollection = null;
+
+    protected ?object $calendarCollection = null;
+
+    protected ?object $bansCollection = null;
+
+    protected ?object $usersSessionsCollection = null;
+
+    protected string $currentDate;
 
     /**Array of errors
      * @var array
@@ -43,7 +53,11 @@ abstract class Model
         $this->usersCollection = $this->mongoClient->water->users;
         $this->departmentsCollection = $this->mongoClient->water->departments;
         $this->permissionsCollection = $this->mongoClient->water->permissions;
+        $this->calendarCollection = $this->mongoClient->water->calendar;
+        $this->bansCollection = $this->mongoClient->water->bans;
+        $this->usersSessionsCollection = $this->mongoClient->water->users_sessions;
         $this->filterInput();
+        $this->currentDate = date('Y-m-d H:i:s');
     }
 
     /**Verification of entered data
@@ -54,6 +68,32 @@ abstract class Model
     public function validate(array $attributes, array $rules): bool
     {
         Validator::lang('ru');
+        Validator::addRule('checkOrder', function ($field, $value, array $params, array $fields){
+            if(is_array($value)){
+                foreach ($value as $item) {
+                    if(!is_array($item)) return false;
+                }
+                return true;
+            }
+            return false;
+
+        });
+        Validator::addRule('checkRoles', function ($field, $value, array $params, array $fields){
+            $allowedRoles = ['Administrator', 'User', 'Moderator'];
+            if(is_array($value)){
+                return array_diff($value, $allowedRoles) && sizeof($value) ? false : true;
+            }
+            if(is_string($value)){
+                return in_array($value, $allowedRoles);
+            }
+            return false;
+        });
+        Validator::addRule('validateMongoId', function ($field, $value, array $params, array $fields){
+            return strlen($value) == 24;
+        });
+        Validator::addRule('validateDate', function ($field, $value, array $params, array $fields){
+            if(date('Y', strtotime($value)) != "1970") return true;
+        });
         $validator = new Validator($attributes);
         $validator->rules($rules);
         return $validator->validate();
@@ -67,6 +107,9 @@ abstract class Model
             'password' => FILTER_SANITIZE_SPECIAL_CHARS,
             'password_confirm' => FILTER_SANITIZE_SPECIAL_CHARS,
             'department_code' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'delivery_date' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'date_end' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'date_start' => FILTER_SANITIZE_SPECIAL_CHARS,
             'user_name' => FILTER_SANITIZE_SPECIAL_CHARS,
             'phone' => FILTER_SANITIZE_SPECIAL_CHARS,
             'key' => FILTER_VALIDATE_INT,
@@ -77,9 +120,21 @@ abstract class Model
               'filter' => FILTER_DEFAULT,
               'flags' => FILTER_REQUIRE_ARRAY
             ],
-            'delivery_place_code' => FILTER_VALIDATE_INT
+            'delivery_place_code' => FILTER_VALIDATE_INT,
+            'delivery_place' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'roles' => [
+                'filter' => FILTER_DEFAULT,
+                'flags' => FILTER_REQUIRE_ARRAY
+            ],
+            'permission' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'new_permission' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'id' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'cabinet' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'responsible' => FILTER_SANITIZE_SPECIAL_CHARS,
+            'note' => FILTER_SANITIZE_SPECIAL_CHARS
         );
-        $this->inputData = filter_var_array($data, $args);
+            $this->inputData = filter_var_array($data, $args);
+
     }
 
     /**Filling the array with user data
@@ -99,6 +154,7 @@ abstract class Model
     /**Add error on array of errors
      * @param int $code
      * @param string $message
+     * @param string|null $url
      */
     public static function addError(int $code, string $message): void
     {
@@ -114,12 +170,6 @@ abstract class Model
         http_response_code($error['code']);
         echo json_encode($error, JSON_UNESCAPED_UNICODE);
         exit();
-    }
-
-    public static function getUserToken(): string
-    {
-        $headers = getallheaders();
-        return trim(str_replace('Bearer', '', $headers['Authorization']));
     }
 
 }

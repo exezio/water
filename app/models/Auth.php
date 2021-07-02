@@ -4,13 +4,16 @@
 namespace App\Models;
 
 
-use Core\lib\DataBase;
 use Core\Model;
-use Core\Router;
+use Core\lib\HelperGenerateAuthData;
+use Browser;
 
 
 class Auth extends Model
 {
+
+    use HelperGenerateAuthData;
+
     /**Filling user-entered data
      * @var array|string[]
      */
@@ -69,50 +72,43 @@ class Auth extends Model
             ['key']
         ],
         'lengthMin' => [
-            ['password', 6],
-            ['key', 4]
+            ['password', 6]
         ]
     ];
 
-    /**Name of collection of database
-     * @var string
-     */
-    private string $collectionName = 'users';
-
-    /**Name of database
-     * @var string
-     */
-    private string $dataBaseName = 'water';
 
     /**Check user in database
      * @return bool
      */
     public function checkLogin(): bool
     {
-        $ne = new CreateUser();
-        $ne->createUser();
         $this->loadAttributes($this->inputData, $this->attributesLogin);
-        if ($this->validate($this->attributesLogin, $this->rulesLogin)){
+        if ($this->validate($this->attributesLogin, $this->rulesLogin)) {
             $login = $this->attributesLogin['login'];
             $db = $this->usersCollection;
             $user = $db->findOne(['login' => $login], ['collation' => ['locale' => 'en', 'strength' => 1]]);
-            if(!$user){
+            if (!$user) {
+                Security::addFailAuthAttemptions(action: 'Логин');
                 self::addError(code: 400, message: 'Пользователь не найден. Обратитесь к системному администратору');
                 return false;
             }
-            if(!isset($user['password'])){
+            if (!isset($user['password'])) {
                 $key = generateKey();
+                $hashedKey = password_hash($key, PASSWORD_DEFAULT);
                 $db->updateOne(
                     ['login' => $login],
-                    ['$set' => ['key' => $key]]
+                    ['$set' => ['key' => $hashedKey]],
+                    ['collation' => ['locale' => 'en', 'strength' => 1]]
                 );
-//                mail(to: 'dmitryzlo111@gmail.com', subject: 'Ключ доступа', message:"Ваш ключ: {$key}" );
-                self::addError(code: 401, message: "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['login']}");
+                Security::clearFailAttemptions();
+                mail(to: 'dmitriy.golubev@uralchem.com', subject: 'Ключ доступа', message: "Ваш ключ: {$key}");
+                self::addError(code: 401, message:
+                    "Пароль не задан, необходимо задать пароль. Ключ выслан на почтовый ящик {$user['login']}");
                 return false;
             }else{
+                Security::clearFailAttemptions();
                 return true;
             }
-
         }else{
             self::addError(code: 400, message: 'Проверьте корректность введенных данных');
             return false;
@@ -122,25 +118,31 @@ class Auth extends Model
     public function createPassword(): bool
     {
         $this->loadAttributes($this->inputData, $this->attributesCreatePassword);
-        if ($this->validate($this->attributesCreatePassword, $this->rulesCreatePassword)){
+        if ($this->validate($this->attributesCreatePassword, $this->rulesCreatePassword)) {
             $login = $this->attributesCreatePassword['login'];
             $password = $this->attributesCreatePassword['password'];
             $password_confirm = $this->attributesCreatePassword['password_confirm'];
             $key = $this->attributesCreatePassword['key'];
             $db = $this->usersCollection;
-            $user = $db->findOne(['login' => $login]);
-
-            if(!$user){
+            $user = $db->findOne(['login' => $login], ['collation' => ['locale' => 'en', 'strength' => 1]]) ?: null;
+            if (!$user) {
+                Security::addFailAuthAttemptions(action: 'Логин');
                 self::addError(code: 400, message: 'Проверьте введенный логин');
                 return false;
             }
 
-            if(isset($user['password'])){
+            if (isset($user['password'])) {
                 self::addError(code: 400, message: "Для пользователя {$user['user_name']} пароль уже задан");
                 return false;
             }
 
-            if($key !== $user['key']){
+            if (!isset($user['key'])) {
+                self::addError(code: 400, message: 'Необходимо пройти проверку логина');
+                return false;
+            }
+
+            if (!password_verify($key, $user['key'])) {
+                Security::addFailAuthAttemptions(action: 'Ключ');
                 self::addError(code: 400, message: "Неверно введен ключ, проверьте электронную почту {$login}");
                 return false;
             }
@@ -148,20 +150,19 @@ class Auth extends Model
             if ($password !== $password_confirm) {
                 self::addError(code: 400, message: "Введенные пароли должны совпадать");
                 return false;
-            }
-
-            else{
+            } else {
                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                 $db->updateOne(
                     ['login' => $login],
                     [
                         '$set' => ['password' => $passwordHash],
                         '$unset' => ['key' => 1]
-                    ]
+                    ],
+                    ['collation' => ['locale' => 'en', 'strength' => 1]]
                 );
+                Security::clearFailAttemptions();
                 return true;
             }
-
         }else{
             self::addError(code: 400, message: 'Проверьте корректность введенных данных');
             return false;
@@ -174,27 +175,41 @@ class Auth extends Model
     public function auth(): array | bool
     {
         $this->loadAttributes($this->inputData, $this->attributesAuth);
-        if($this->validate($this->attributesAuth, $this->rulesAuth)){
+        if ($this->validate($this->attributesAuth, $this->rulesAuth)) {
             $login = $this->attributesAuth['login'];
             $password = $this->attributesAuth['password'];
             $db = $this->usersCollection;
-            $user = $db->findOne(['login' => $login], ['locale' => 'en', 'strength' => 1]);
-            if($user){
-                if(password_verify($password, $user['password'])){
-                    $authData = $this->generateAuthData();
-                    $db->updateOne(
-                        ['login' => $login],
-                        ['$set' => [
-                            'token' => $authData['token'],
-                            'secret' => $authData['secret']
-                        ]]
-                    );
-                    return $responseData = [
-                         'token' => $authData['token'],
-                         'secret' => $authData['secret']
-                     ];
+            $user = $db->findOne(['login' => $login], ['collation' => ['locale' => 'en', 'strength' => 1]]);
+            if ($user) {
+                if (!isset($user['password'])) {
+                    self::addError(code: 400, message: 'Необходимо пройти проверку логина');
+                    return false;
+                }
+                if (password_verify($password, $user['password'])) {
+                    $sessionData = $this->generateSessionData();
+                    $userSessions = $this->usersSessionsCollection->findOne(['user_id' => $user['_id']]);
+                    if ($userSessions) {
+                        $this->usersSessionsCollection->updateOne(
+                            ['user_id' => $user['_id']],
+                            [
+                                '$set' => [
+                                    $sessionData['platform'] => $sessionData['sessionData']
+                                ]
+                            ]
+                        );
+                    }else{
+                        $this->usersSessionsCollection->insertOne([
+                            'user_id' => $user['_id'],
+                            'user_login' => $user['login'],
+                            $sessionData['platform'] => $sessionData['sessionData']
+                        ]);
+                    }
+
+                    Security::clearFailAttemptions();
+                    return $sessionData['userSessionData'];
                 }
             }
+            Security::addFailAuthAttemptions('логин или пароль');
         }
         self::addError(code: 400, message: 'Неверный логин или пароль');
         return false;
@@ -252,13 +267,6 @@ class Auth extends Model
 //    }
 
 
-    private function generateAuthData(): array
-    {
-        $authData = [
-            'token' => bin2hex(random_bytes(16)),
-            'secret' => hash("md5", generateKey())
-        ];
-        return $authData;
-    }
+
 
 }

@@ -5,44 +5,87 @@ namespace App\Controllers;
 
 
 use App\Models\CheckAuth;
-use App\Models\Create;
-use App\Models\Order;
+use App\Models\User\CreateOrder;
+use App\Models\Roles;
+use App\Models\User\DeleteOrderById;
+use App\Models\User\GetAllDepartmentOrders;
+use App\Models\User\GetAllDepartmentOrdersPerMonth;
+use App\Models\User\getAllOrdersByDate;
+use App\Models\User\GetDepartmentInfo;
+use App\Models\User\GetOrderById;
+use App\Models\User\UpdateOrderById;
 use Core\Controller;
 
 class UserController extends Controller
 {
 
-    public function createAction()
+    public function createOrderAction()
     {
-        if(CheckAuth::checkAuth()) {
-            $createOrder = new Create();
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'create-order')) {
+            $createOrder = new CreateOrder();
             $createOrder->create() ? sendResponse(code: 200) : $createOrder::getError();
-        }else CheckAuth::getError();
+        }else CheckAuth::getError() || Roles::getError();
     }
 
-    public function getAllAction()
+    public function getAllDepartmentOrdersAction()
     {
-        echo "getAll A";
-        if(CheckAuth::checkAuth()){
-
-        }else CheckAuth::getError();
-//        $order = new Order();
-
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'get-all-department-orders')){
+            $getAllOrders = new GetAllDepartmentOrders();
+            $result = $getAllOrders->getAllDepartmentOrders();
+            $result ? sendResponse(200, $result) : $getAllOrders::getError();
+        }else CheckAuth::getError() || Roles::getError();
     }
 
-    public function getByIdAction()
+    public function getAllOrdersPerMonthAction()
     {
-        echo "getById A";
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'get-all-department-orders-per-month')){
+            $getAllOrdersPerMonth = new GetAllDepartmentOrdersPerMonth();
+            $result = $getAllOrdersPerMonth->getAllDepartmentOrdersPerMonth();
+            $result ? sendResponse(200, $result) : $getAllOrdersPerMonth::getError();
+        }else CheckAuth::getError() || Roles::getError();
     }
 
-    public function updateAction()
+    public function getOrderByIdAction()
     {
-        echo "update A";
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'get-order-by-id')){
+            $getOrderById = new GetOrderById();
+            $result = $getOrderById->getOrderById();
+            $result ? sendResponse(200, $result) : $getOrderById::getError();
+        }else CheckAuth::getError() || Roles::getError();
     }
 
-    public function deleteAction()
+    public function updateOrderByIdAction()
     {
-        echo "delete A";
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'update-order-by-id')) {
+            $updateOrderById = new UpdateOrderById();
+            $updateOrderById->updateOrder() ? sendResponse(code: 200) : $updateOrderById::getError();
+        }else CheckAuth::getError() || Roles::getError();
+    }
+
+    public function deleteOrderAction()
+    {
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'delete-order-by-id')){
+            $deleteOrderById = new DeleteOrderById();
+            $deleteOrderById->deleteOrderById() ? sendResponse(code: 200) : $deleteOrderById::getError();
+        }else CheckAuth::getError() || Roles::getError();
+    }
+
+    public function getAllOrdersByDateAction()
+    {
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'get-all-orders-by-date')){
+            $getAllOrdersByDate = new GetAllOrdersByDate();
+            $result = $getAllOrdersByDate->getAllOrdersByDate();
+            $result ? sendResponse(code: 200, data: $result) : $getAllOrdersByDate::getError();
+        }else CheckAuth::getError() || Roles::getError();
+    }
+
+    public function getDepartmentInfoAction()
+    {
+        if(CheckAuth::checkAuth() && Roles::hasPermission(action: 'get-department-info')){
+            $getDepartmentInfo = new GetDepartmentInfo();
+            $result = $getDepartmentInfo->getDepartmentInfo();
+            $result ? sendResponse(code: 200, data: $result) : $getDepartmentInfo::getError();
+        }else CheckAuth::getError() || Roles::getError();
     }
 
 }
